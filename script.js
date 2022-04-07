@@ -22,14 +22,18 @@ window.addEventListener("DOMContentLoaded", () => {
     welcome.src = "assets/welcome.png";
     let gameOver = new Image();
     gameOver.src = "assets/game_over.png";
+    let pausedImg = new Image();
+    pausedImg.src = "assets/paused.png";
 
     let pointAudio = new Audio("assets/point.wav");
     let gameOverAudio = new Audio("assets/over.wav");
 
     let muted = false;
     let game_running = false;
+    let game_paused = false;
     let game_over = false;
     let pressed = false;
+    let game_started = false;
     let pipeArr = [];
 
     let bird_size = 25;
@@ -138,13 +142,14 @@ window.addEventListener("DOMContentLoaded", () => {
                 width,
                 height
             );
-            x += game_speed;
+            if (!game_paused) x += game_speed;
             if (x > mountain.width) x = 0;
-
-            if (pressed) {
-                bird.y -= 3;
-            } else {
-                bird.y += 3;
+            if (!game_paused) {
+                if (pressed) {
+                    bird.y -= 3;
+                } else {
+                    bird.y += 3;
+                }
             }
             if (bird.y > height - bird.size) bird.y = height - bird.size;
             else if (bird.y < 0) bird.y = 0;
@@ -155,7 +160,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
             for (let i = pipeArr.length - 1; i >= 0; i--) {
                 pipeArr[i].draw();
-                pipeArr[i].update();
+                if (!game_paused) pipeArr[i].update();
                 if (pipeArr[i].pipe_1_x < bird.x && !pipeArr[i].score) {
                     pipeArr[i].score = true;
                     score += 1;
@@ -178,6 +183,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     );
                     cancelAnimationFrame(animationFrame);
                     game_over = true;
+                    game_started = false;
                     if (!muted) gameOverAudio.play();
                 }
             }
@@ -215,8 +221,21 @@ window.addEventListener("DOMContentLoaded", () => {
                 bird.size,
                 bird.size
             );
+            if (game_paused) {
+                ctx.drawImage(
+                    pausedImg,
+                    0,
+                    0,
+                    pausedImg.width,
+                    pausedImg.height,
+                    0,
+                    0,
+                    width,
+                    height
+                );
+            }
         }
-        if (!game_running) {
+        if (!game_running && !game_paused) {
             ctx.drawImage(
                 welcome,
                 0,
@@ -229,7 +248,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 canvas.height
             );
         }
-        frame++;
+        if (!game_paused) frame++;
         if (frame >= 6000) frame = 0;
     }
 
@@ -272,8 +291,10 @@ window.addEventListener("DOMContentLoaded", () => {
         if (e.key == " " || e.key == "ArrowUp") {
             pressed = true;
             game_running = true;
+            game_started = true;
         } else if (e.key == "Escape") {
-            game_running = false;
+            // game_running = !game_running;
+            if (game_started) game_paused = !game_paused;
         }
     });
     window.addEventListener("keyup", (e) => {
@@ -283,6 +304,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (e.key == "r") {
             if (game_running && game_over) {
                 game_over = false;
+                game_started = true;
                 score = 0;
                 pipeArr = [];
                 bird.y = height / 2 - bird.size / 2;
